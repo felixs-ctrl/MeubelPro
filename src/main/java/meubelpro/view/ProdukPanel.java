@@ -10,7 +10,6 @@ import javax.swing.table.DefaultTableModel;
 import meubelpro.dao.ProdukDAO;
 import meubelpro.model.Produk;
 
-/** Kelola Produk: daftar, cari, tambah, lihat detail, edit, hapus. */
 public class ProdukPanel extends RefreshablePanel {
 
     private static final String[] JENIS = {"Meja", "Kursi", "Lemari", "Rak"};
@@ -19,14 +18,13 @@ public class ProdukPanel extends RefreshablePanel {
     private final DefaultTableModel model = UiUtil.readOnlyModel("No", "Kode", "Nama Produk", "Jenis", "Deskripsi");
     private final JTable table = UiUtil.table(model);
     private final JTextField txtCari = new JTextField(20);
-    private List<Produk> data = new ArrayList<>();   // sejajar dengan baris tabel
+    private List<Produk> data = new ArrayList<>();   
 
     public ProdukPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(15, 15, 15, 15));
         setBackground(UiUtil.BG);
 
-        // ----- Bagian atas: judul + pencarian -----
         JPanel atas = new JPanel(new BorderLayout());
         atas.setOpaque(false);
         atas.add(UiUtil.title("Kelola Produk"), BorderLayout.WEST);
@@ -41,11 +39,9 @@ public class ProdukPanel extends RefreshablePanel {
         atas.add(cari, BorderLayout.EAST);
         add(atas, BorderLayout.NORTH);
 
-        // ----- Tabel -----
         table.getColumnModel().getColumn(0).setMaxWidth(50);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // ----- Tombol aksi -----
         JPanel bawah = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         bawah.setOpaque(false);
         JButton btnTambah = UiUtil.button("Tambah Produk");
@@ -58,7 +54,6 @@ public class ProdukPanel extends RefreshablePanel {
         bawah.add(btnHapus);
         add(bawah, BorderLayout.SOUTH);
 
-        // ----- Event -----
         btnCari.addActionListener(e -> refresh());
         txtCari.addActionListener(e -> refresh());
         btnReset.addActionListener(e -> { txtCari.setText(""); refresh(); });
@@ -82,7 +77,6 @@ public class ProdukPanel extends RefreshablePanel {
         }
     }
 
-    /** Mengambil produk yang dipilih di tabel (null jika belum memilih). */
     private Produk getSelected() {
         int row = table.getSelectedRow();
         if (row < 0) {
@@ -140,11 +134,10 @@ public class ProdukPanel extends RefreshablePanel {
             dao.delete(p.getId());
             refresh();
         } catch (SQLException ex) {
-            UiUtil.sqlError(this, ex);   // mis. produk masih dipakai di rencana produksi
+            UiUtil.sqlError(this, ex);  
         }
     }
 
-    /** Dialog form tambah/edit. Mengembalikan Produk hasil input, atau null jika dibatalkan/tidak valid. */
     private Produk tampilkanForm(String judul, Produk src) {
         JTextField txtKode = new JTextField(src == null ? "" : src.getKode(), 20);
         JTextField txtNama = new JTextField(src == null ? "" : src.getNama(), 20);

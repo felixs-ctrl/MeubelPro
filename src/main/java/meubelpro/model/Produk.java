@@ -1,11 +1,10 @@
 package meubelpro.model;
 
-/** Model data produk mebel. */
 public class Produk {
     private int id;
     private String kode;
     private String nama;
-    private String jenis;      // Meja / Kursi / Lemari / Rak
+    private String jenis;
     private String deskripsi;
 
     public Produk() { }
@@ -23,6 +22,5 @@ public class Produk {
     public String getDeskripsi() { return deskripsi; }
     public void setDeskripsi(String deskripsi) { this.deskripsi = deskripsi; }
 
-    /** Dipakai oleh JComboBox agar tampil "KODE - Nama". */
     @Override public String toString() { return kode + " - " + nama; }
 }

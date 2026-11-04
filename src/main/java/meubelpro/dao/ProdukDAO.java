@@ -6,7 +6,6 @@ import java.util.List;
 import meubelpro.config.DatabaseConnection;
 import meubelpro.model.Produk;
 
-/** DAO CRUD untuk tabel produk. Semua method melempar SQLException agar ditangani oleh View. */
 public class ProdukDAO {
 
     private Produk map(ResultSet rs) throws SQLException {
@@ -14,12 +13,10 @@ public class ProdukDAO {
                 rs.getString("jenis"), rs.getString("deskripsi"));
     }
 
-    /** Ambil semua produk. */
     public List<Produk> getAll() throws SQLException {
         return search(null);
     }
 
-    /** Cari produk berdasarkan kode / nama / jenis. keyword null/kosong = semua data. */
     public List<Produk> search(String keyword) throws SQLException {
         String sql = "SELECT * FROM produk WHERE kode LIKE ? OR nama LIKE ? OR jenis LIKE ? ORDER BY kode";
         String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";

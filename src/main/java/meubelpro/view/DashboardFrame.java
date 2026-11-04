@@ -5,7 +5,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import meubelpro.model.Admin;
 
-/** Dashboard admin: menu di kiri, konten (CardLayout) di tengah. */
 public class DashboardFrame extends JFrame {
 
     private final CardLayout cards = new CardLayout();
@@ -17,7 +16,6 @@ public class DashboardFrame extends JFrame {
         setSize(1100, 680);
         setLocationRelativeTo(null);
 
-        // ----- Header -----
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(UiUtil.PRIMARY);
         header.setBorder(new EmptyBorder(10, 16, 10, 16));
@@ -40,7 +38,6 @@ public class DashboardFrame extends JFrame {
         header.add(lblApp, BorderLayout.WEST);
         header.add(kanan, BorderLayout.EAST);
 
-        // ----- Panel-panel konten -----
         RefreshablePanel home = new HomePanel();
         RefreshablePanel produk = new ProdukPanel();
         RefreshablePanel bahan = new BahanBakuPanel();
@@ -52,7 +49,6 @@ public class DashboardFrame extends JFrame {
         content.add(produksi, "produksi");
         content.add(laporan, "laporan");
 
-        // ----- Menu samping -----
         JPanel menu = new JPanel(new GridLayout(0, 1, 0, 6));
         menu.setBorder(new EmptyBorder(14, 10, 14, 10));
         menu.setBackground(UiUtil.ACCENT);
@@ -82,7 +78,7 @@ public class DashboardFrame extends JFrame {
         b.setPreferredSize(new Dimension(180, 40));
         b.addActionListener(e -> {
             cards.show(content, card);
-            panel.refresh();      // muat ulang data terbaru dari database
+            panel.refresh();
         });
         menu.add(b);
     }

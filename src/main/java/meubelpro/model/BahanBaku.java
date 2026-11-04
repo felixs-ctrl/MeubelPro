@@ -1,13 +1,12 @@
 package meubelpro.model;
 
-/** Model data bahan baku. */
 public class BahanBaku {
     private int id;
     private String kode;
     private String nama;
-    private String jenis;   // Kayu / Paku / Baut / Lem / Cat / Lainnya
+    private String jenis;
     private String satuan;
-    private int stok;       // Diubah dari double ke int
+    private int stok;
 
     public BahanBaku() { }
     
