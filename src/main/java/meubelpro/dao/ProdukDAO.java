@@ -1,74 +1,107 @@
+
 package meubelpro.dao;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.SQLException;
 import java.util.List;
-import meubelpro.config.DatabaseConnection;
+import meubelpro.config.HibernateUtil;
 import meubelpro.model.Produk;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
 public class ProdukDAO {
-
-    private Produk map(ResultSet rs) throws SQLException {
-        return new Produk(rs.getInt("id"), rs.getString("kode"), rs.getString("nama"),
-                rs.getString("jenis"), rs.getString("deskripsi"));
-    }
 
     public List<Produk> getAll() throws SQLException {
         return search(null);
     }
 
     public List<Produk> search(String keyword) throws SQLException {
-        String sql = "SELECT * FROM produk WHERE kode LIKE ? OR nama LIKE ? OR jenis LIKE ? ORDER BY kode";
-        String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        List<Produk> list = new ArrayList<>();
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, like); ps.setString(2, like); ps.setString(3, like);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(map(rs));
-            }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+
+            return session.createQuery(
+                    "FROM Produk p WHERE p.kode LIKE :keyword "
+                    + "OR p.nama LIKE :keyword "
+                    + "OR p.jenis LIKE :keyword ORDER BY p.kode",
+                    Produk.class)
+                    .setParameter("keyword", like)
+                    .getResultList();
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal mencari data produk.", e);
         }
-        return list;
     }
 
     public void insert(Produk p) throws SQLException {
-        String sql = "INSERT INTO produk (kode, nama, jenis, deskripsi) VALUES (?,?,?,?)";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, p.getKode());
-            ps.setString(2, p.getNama());
-            ps.setString(3, p.getJenis());
-            ps.setString(4, p.getDeskripsi());
-            ps.executeUpdate();
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            session.persist(p);
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal menambahkan produk.", e);
         }
     }
 
     public void update(Produk p) throws SQLException {
-        String sql = "UPDATE produk SET kode=?, nama=?, jenis=?, deskripsi=? WHERE id=?";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, p.getKode());
-            ps.setString(2, p.getNama());
-            ps.setString(3, p.getJenis());
-            ps.setString(4, p.getDeskripsi());
-            ps.setInt(5, p.getId());
-            ps.executeUpdate();
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            session.merge(p);
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal mengubah produk.", e);
         }
     }
 
     public void delete(int id) throws SQLException {
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM produk WHERE id=?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            Produk produk = session.get(Produk.class, id);
+
+            if (produk != null) {
+                session.remove(produk);
+            }
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal menghapus produk.", e);
         }
     }
 
     public int count() throws SQLException {
-        try (Connection c = DatabaseConnection.getConnection();
-             Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM produk")) {
-            return rs.next() ? rs.getInt(1) : 0;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            Long total = session.createQuery(
+                    "SELECT COUNT(p.id) FROM Produk p",
+                    Long.class)
+                    .getSingleResult();
+
+            return total.intValue();
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal menghitung jumlah produk.", e);
         }
     }
 }

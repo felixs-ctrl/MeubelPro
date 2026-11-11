@@ -1,25 +1,31 @@
+
 package meubelpro.dao;
 
-import java.sql.*;
-import meubelpro.config.DatabaseConnection;
+import java.sql.SQLException;
+import meubelpro.config.HibernateUtil;
 import meubelpro.model.Admin;
 import meubelpro.util.PasswordUtil;
+import org.hibernate.Session;
 
 public class AdminDAO {
 
     public Admin login(String username, String password) throws SQLException {
-        String sql = "SELECT id, username, nama_lengkap, email FROM admin WHERE username = ? AND password = ?";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, username);
-            ps.setString(2, PasswordUtil.sha256(password));
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new Admin(rs.getInt("id"), rs.getString("username"),
-                            rs.getString("nama_lengkap"), rs.getString("email"));
-                }
-            }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            String passwordHash = PasswordUtil.sha256(password);
+
+            Admin admin = session.createQuery(
+                    "FROM Admin a WHERE a.username = :username "
+                    + "AND a.password = :password",
+                    Admin.class)
+                    .setParameter("username", username)
+                    .setParameter("password", passwordHash)
+                    .uniqueResult();
+
+            return admin;
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal melakukan login admin.", e);
         }
-        return null;
     }
 }

@@ -1,101 +1,165 @@
+
 package meubelpro.dao;
 
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import meubelpro.config.DatabaseConnection;
+import meubelpro.config.HibernateUtil;
+import meubelpro.model.Produk;
 import meubelpro.model.RencanaProduksi;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
-/** DAO untuk tabel rencana_produksi (rencana, jadwal, update status, laporan). */
 public class ProduksiDAO {
 
-    private static final String SELECT_JOIN =
-            "SELECT r.*, p.kode AS kode_produk, p.nama AS nama_produk "
-          + "FROM rencana_produksi r JOIN produk p ON p.id = r.produk_id ";
-
-    private RencanaProduksi map(ResultSet rs) throws SQLException {
-        RencanaProduksi r = new RencanaProduksi();
-        r.setId(rs.getInt("id"));
-        r.setProdukId(rs.getInt("produk_id"));
-        r.setKodeProduk(rs.getString("kode_produk"));
-        r.setNamaProduk(rs.getString("nama_produk"));
-        r.setJumlah(rs.getInt("jumlah"));
-        r.setTanggalMulai(rs.getDate("tanggal_mulai").toLocalDate());
-        r.setTanggalSelesai(rs.getDate("tanggal_selesai").toLocalDate());
-        r.setStatus(rs.getString("status"));
-        r.setJumlahHasil(rs.getInt("jumlah_hasil"));
-        return r;
-    }
-
-    /** Jadwal produksi, diurutkan dari tanggal mulai terdekat. status null = semua status. */
     public List<RencanaProduksi> getJadwal(String status) throws SQLException {
-        boolean filter = status != null && !status.isEmpty();
-        String sql = SELECT_JOIN + (filter ? "WHERE r.status = ? " : "") + "ORDER BY r.tanggal_mulai, r.id";
-        List<RencanaProduksi> list = new ArrayList<>();
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            if (filter) ps.setString(1, status);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(map(rs));
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            String hql = "SELECT r, p.kode, p.nama "
+                    + "FROM RencanaProduksi r "
+                    + "JOIN Produk p ON p.id = r.produkId ";
+
+            if (status != null && !status.isEmpty()) {
+                hql += "WHERE r.status = :status ";
             }
+
+            hql += "ORDER BY r.tanggalMulai, r.id";
+
+            var query = session.createQuery(hql, Object[].class);
+
+            if (status != null && !status.isEmpty()) {
+                query.setParameter("status", status);
+            }
+
+            List<Object[]> results = query.getResultList();
+            List<RencanaProduksi> list = new ArrayList<>();
+
+            for (Object[] row : results) {
+                RencanaProduksi r = (RencanaProduksi) row[0];
+                r.setKodeProduk((String) row[1]);
+                r.setNamaProduk((String) row[2]);
+                list.add(r);
+            }
+
+            return list;
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal mengambil jadwal produksi.", e);
         }
-        return list;
     }
 
     public void insert(RencanaProduksi r) throws SQLException {
-        String sql = "INSERT INTO rencana_produksi (produk_id, jumlah, tanggal_mulai, tanggal_selesai, status) "
-                   + "VALUES (?,?,?,?,?)";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, r.getProdukId());
-            ps.setInt(2, r.getJumlah());
-            ps.setDate(3, Date.valueOf(r.getTanggalMulai()));
-            ps.setDate(4, Date.valueOf(r.getTanggalSelesai()));
-            ps.setString(5, RencanaProduksi.DIRENCANAKAN);
-            ps.executeUpdate();
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            r.setStatus(RencanaProduksi.DIRENCANAKAN);
+            r.setJumlahHasil(0);
+
+            session.persist(r);
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal menambahkan rencana produksi.", e);
         }
     }
 
-    /** Update status; jumlahHasil hanya relevan saat status "Selesai". */
-    public void updateStatus(int id, String status, int jumlahHasil) throws SQLException {
-        String sql = "UPDATE rencana_produksi SET status=?, jumlah_hasil=? WHERE id=?";
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, status);
-            ps.setInt(2, RencanaProduksi.SELESAI.equals(status) ? jumlahHasil : 0);
-            ps.setInt(3, id);
-            ps.executeUpdate();
+    public void updateStatus(int id, String status, int jumlahHasil)
+            throws SQLException {
+
+        Transaction transaction = null;
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            RencanaProduksi r = session.get(RencanaProduksi.class, id);
+
+            if (r != null) {
+                r.setStatus(status);
+                r.setJumlahHasil(
+                        RencanaProduksi.SELESAI.equals(status) ? jumlahHasil : 0
+                );
+            }
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal mengubah status produksi.", e);
         }
     }
 
     public void delete(int id) throws SQLException {
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM rencana_produksi WHERE id=?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        }
-    }
+        Transaction transaction = null;
 
-    /** Jumlah rencana pada status tertentu (null = semua). */
-    public int countByStatus(String status) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM rencana_produksi" + (status == null ? "" : " WHERE status = ?");
-        try (Connection c = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            if (status != null) ps.setString(1, status);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+
+            RencanaProduksi r = session.get(RencanaProduksi.class, id);
+
+            if (r != null) {
+                session.remove(r);
             }
+
+            transaction.commit();
+
+        } catch (RuntimeException e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            throw new SQLException("Gagal menghapus rencana produksi.", e);
         }
     }
 
-    /** Total unit yang direncanakan (index 0) dan total unit hasil (index 1). */
+    public int countByStatus(String status) throws SQLException {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            String hql = "SELECT COUNT(r.id) FROM RencanaProduksi r";
+
+            if (status != null) {
+                hql += " WHERE r.status = :status";
+            }
+
+            var query = session.createQuery(hql, Long.class);
+
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+
+            return query.getSingleResult().intValue();
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal menghitung rencana produksi.", e);
+        }
+    }
+
     public int[] getTotalUnit() throws SQLException {
-        String sql = "SELECT COALESCE(SUM(jumlah),0), COALESCE(SUM(jumlah_hasil),0) FROM rencana_produksi";
-        try (Connection c = DatabaseConnection.getConnection();
-             Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
-            rs.next();
-            return new int[]{rs.getInt(1), rs.getInt(2)};
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            Object[] result = session.createQuery(
+                    "SELECT COALESCE(SUM(r.jumlah), 0), "
+                    + "COALESCE(SUM(r.jumlahHasil), 0) "
+                    + "FROM RencanaProduksi r",
+                    Object[].class)
+                    .getSingleResult();
+
+            Number totalRencana = (Number) result[0];
+            Number totalHasil = (Number) result[1];
+
+            return new int[]{
+                totalRencana.intValue(),
+                totalHasil.intValue()
+            };
+
+        } catch (RuntimeException e) {
+            throw new SQLException("Gagal menghitung total unit produksi.", e);
         }
     }
 }
