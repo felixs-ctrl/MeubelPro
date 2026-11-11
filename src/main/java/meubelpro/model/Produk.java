@@ -1,4 +1,3 @@
-
 package meubelpro.model;
 
 import jakarta.persistence.Entity;
