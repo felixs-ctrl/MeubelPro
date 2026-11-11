@@ -1,4 +1,3 @@
-
 package meubelpro.config;
 
 import meubelpro.model.Produk;
