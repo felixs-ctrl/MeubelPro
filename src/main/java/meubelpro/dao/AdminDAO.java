@@ -1,16 +1,27 @@
-
 package meubelpro.dao;
 
 import java.sql.SQLException;
-import meubelpro.config.HibernateUtil;
+
 import meubelpro.model.Admin;
 import meubelpro.util.PasswordUtil;
-import org.hibernate.Session;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class AdminDAO {
 
+    private final SessionFactory sessionFactory;
+
+    public AdminDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     public Admin login(String username, String password) throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+        try (Session session = sessionFactory.openSession()) {
 
             String passwordHash = PasswordUtil.sha256(password);
 

@@ -2,18 +2,24 @@ package meubelpro.view;
 
 import java.awt.*;
 import java.sql.SQLException;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import meubelpro.dao.AdminDAO;
+
+import meubelpro.config.AppServices;
 import meubelpro.model.Admin;
 
 public class LoginFrame extends JFrame {
 
     private final JTextField txtUsername = new JTextField(18);
     private final JPasswordField txtPassword = new JPasswordField(18);
-    private final AdminDAO adminDAO = new AdminDAO();
 
-    public LoginFrame() {
+    private final AppServices services;
+
+    public LoginFrame(AppServices services) {
+
+        this.services = services;
+
         setTitle("MeubelPro - Login");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(420, 320);
@@ -28,27 +34,41 @@ public class LoginFrame extends JFrame {
         judul.setHorizontalAlignment(SwingConstants.CENTER);
         root.add(judul, BorderLayout.NORTH);
 
-        JPanel form = UiUtil.formPanel(new String[]{"Username", "Password"},
-                new JComponent[]{txtUsername, txtPassword});
+        JPanel form = UiUtil.formPanel(
+                new String[]{"Username", "Password"},
+                new JComponent[]{txtUsername, txtPassword}
+        );
+
         form.setOpaque(false);
         root.add(form, BorderLayout.CENTER);
 
         JButton btnLogin = UiUtil.button("Login");
         JButton btnKembali = UiUtil.button("Kembali");
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+
+        JPanel btns = new JPanel(
+                new FlowLayout(FlowLayout.CENTER, 10, 0)
+        );
+
         btns.setOpaque(false);
         btns.add(btnLogin);
         btns.add(btnKembali);
+
         root.add(btns, BorderLayout.SOUTH);
 
         btnLogin.addActionListener(e -> prosesLogin());
-        btnKembali.addActionListener(e -> { dispose(); new BerandaFrame().setVisible(true); });
-        getRootPane().setDefaultButton(btnLogin);   // tekan Enter = Login
+
+        btnKembali.addActionListener(e -> {
+            dispose();
+            new BerandaFrame(services).setVisible(true);
+        });
+
+        getRootPane().setDefaultButton(btnLogin);
 
         setContentPane(root);
     }
 
     private void prosesLogin() {
+
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword());
 
@@ -56,15 +76,20 @@ public class LoginFrame extends JFrame {
             UiUtil.warn(this, "Username dan password wajib diisi.");
             return;
         }
+
         try {
-            Admin admin = adminDAO.login(username, password);
+
+            Admin admin = services.adminDAO().login(username, password);
+
             if (admin == null) {
                 UiUtil.warn(this, "Username atau password salah.");
                 txtPassword.setText("");
                 return;
             }
+
             dispose();
-            new ProfileFrame(admin).setVisible(true);   // alur: Login -> Profile
+            new ProfileFrame(admin, services).setVisible(true);
+
         } catch (SQLException ex) {
             UiUtil.sqlError(this, ex);
         }

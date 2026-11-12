@@ -1,17 +1,27 @@
-
 package meubelpro.dao;
 
 import java.sql.SQLException;
 import java.util.List;
-import meubelpro.config.HibernateUtil;
+
 import meubelpro.model.BahanBaku;
+
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class BahanBakuDAO {
 
+    private final SessionFactory sessionFactory;
+
+    public BahanBakuDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     public List<BahanBaku> getAll() throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             return session.createQuery(
                     "FROM BahanBaku b ORDER BY b.jenis, b.nama",
@@ -26,7 +36,7 @@ public class BahanBakuDAO {
     public void insert(BahanBaku b) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             session.persist(b);
@@ -44,7 +54,7 @@ public class BahanBakuDAO {
     public void updateStok(int id, int stokBaru) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             BahanBaku bahan = session.get(BahanBaku.class, id);
@@ -66,7 +76,7 @@ public class BahanBakuDAO {
     public void delete(int id) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             BahanBaku bahan = session.get(BahanBaku.class, id);
@@ -86,7 +96,7 @@ public class BahanBakuDAO {
     }
 
     public int count() throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             Long total = session.createQuery(
                     "SELECT COUNT(b.id) FROM BahanBaku b",

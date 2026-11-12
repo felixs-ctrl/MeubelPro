@@ -1,19 +1,28 @@
-
 package meubelpro.dao;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import meubelpro.config.HibernateUtil;
-import meubelpro.model.Produk;
+
 import meubelpro.model.RencanaProduksi;
+
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class ProduksiDAO {
 
+    private final SessionFactory sessionFactory;
+
+    public ProduksiDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     public List<RencanaProduksi> getJadwal(String status) throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             String hql = "SELECT r, p.kode, p.nama "
                     + "FROM RencanaProduksi r "
@@ -51,7 +60,7 @@ public class ProduksiDAO {
     public void insert(RencanaProduksi r) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             r.setStatus(RencanaProduksi.DIRENCANAKAN);
@@ -74,7 +83,7 @@ public class ProduksiDAO {
 
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             RencanaProduksi r = session.get(RencanaProduksi.class, id);
@@ -99,7 +108,7 @@ public class ProduksiDAO {
     public void delete(int id) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             RencanaProduksi r = session.get(RencanaProduksi.class, id);
@@ -119,7 +128,7 @@ public class ProduksiDAO {
     }
 
     public int countByStatus(String status) throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             String hql = "SELECT COUNT(r.id) FROM RencanaProduksi r";
 
@@ -141,7 +150,7 @@ public class ProduksiDAO {
     }
 
     public int[] getTotalUnit() throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             Object[] result = session.createQuery(
                     "SELECT COALESCE(SUM(r.jumlah), 0), "

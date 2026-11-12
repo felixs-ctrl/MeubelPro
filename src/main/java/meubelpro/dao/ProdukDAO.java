@@ -1,21 +1,31 @@
-
 package meubelpro.dao;
 
 import java.sql.SQLException;
 import java.util.List;
-import meubelpro.config.HibernateUtil;
+
 import meubelpro.model.Produk;
+
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class ProdukDAO {
+
+    private final SessionFactory sessionFactory;
+
+    public ProdukDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     public List<Produk> getAll() throws SQLException {
         return search(null);
     }
 
     public List<Produk> search(String keyword) throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
 
@@ -35,7 +45,7 @@ public class ProdukDAO {
     public void insert(Produk p) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             session.persist(p);
@@ -53,7 +63,7 @@ public class ProdukDAO {
     public void update(Produk p) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             session.merge(p);
@@ -71,7 +81,7 @@ public class ProdukDAO {
     public void delete(int id) throws SQLException {
         Transaction transaction = null;
 
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
 
             Produk produk = session.get(Produk.class, id);
@@ -91,7 +101,7 @@ public class ProdukDAO {
     }
 
     public int count() throws SQLException {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
 
             Long total = session.createQuery(
                     "SELECT COUNT(p.id) FROM Produk p",

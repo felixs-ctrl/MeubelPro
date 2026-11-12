@@ -3,12 +3,19 @@ package meubelpro.view;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import meubelpro.config.AppServices;
 import meubelpro.model.Admin;
 
 /** Halaman Profile admin setelah login, lalu lanjut ke Dashboard. */
 public class ProfileFrame extends JFrame {
 
-    public ProfileFrame(Admin admin) {
+    private final AppServices services;
+
+    public ProfileFrame(Admin admin, AppServices services) {
+
+        this.services = services;
+
         setTitle("MeubelPro - Profile");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(440, 330);
@@ -28,18 +35,26 @@ public class ProfileFrame extends JFrame {
                 new JComponent[]{
                     new JLabel(admin.getNamaLengkap()),
                     new JLabel(admin.getUsername()),
-                    new JLabel(admin.getEmail() == null ? "-" : admin.getEmail())});
+                    new JLabel(
+                            admin.getEmail() == null ? "-" : admin.getEmail()
+                    )
+                }
+        );
+
         info.setOpaque(false);
         root.add(info, BorderLayout.CENTER);
 
         JButton btnLanjut = UiUtil.button("Lanjut ke Dashboard");
+
         btnLanjut.addActionListener(e -> {
             dispose();
-            new DashboardFrame(admin).setVisible(true);   // alur: Profile -> Dashboard
+            new DashboardFrame(admin, services).setVisible(true);
         });
+
         JPanel south = new JPanel();
         south.setOpaque(false);
         south.add(btnLanjut);
+
         root.add(south, BorderLayout.SOUTH);
 
         setContentPane(root);
