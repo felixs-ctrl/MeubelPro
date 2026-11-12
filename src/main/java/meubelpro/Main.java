@@ -19,7 +19,6 @@ public class Main {
 
     public static void main(String[] args) {
 
-        // mengatur tampilan nimbus.
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -30,14 +29,11 @@ public class Main {
         } catch (Exception ignored) {
         }
 
-        // menjalankan spring container.
         AnnotationConfigApplicationContext context =
                 new AnnotationConfigApplicationContext(SpringConfig.class);
 
-        // mendaftarkan shutdown hook spring.
         context.registerShutdownHook();
 
-        // mengambil seluruh dao dari spring.
         AppServices services = new AppServices(
                 context.getBean(AdminDAO.class),
                 context.getBean(ProdukDAO.class),
@@ -45,7 +41,6 @@ public class Main {
                 context.getBean(ProduksiDAO.class)
         );
 
-        // membuka halaman beranda.
         SwingUtilities.invokeLater(() -> {
             BerandaFrame frame = new BerandaFrame(services);
             frame.setVisible(true);

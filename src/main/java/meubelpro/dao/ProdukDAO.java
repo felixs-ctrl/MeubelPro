@@ -2,13 +2,10 @@ package meubelpro.dao;
 
 import java.sql.SQLException;
 import java.util.List;
-
 import meubelpro.model.Produk;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-
 import org.springframework.stereotype.Repository;
 
 @Repository
